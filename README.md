@@ -8,7 +8,7 @@ For the file Snake.asm to work properly you need to have the following minimum h
 
 2. Eight LEDs
 
-3. An 11.059 MHz Crystal.
+3. An 11.0592 MHz Crystal.
 
 4. an 89C52 ATMEL Microcontroller.
 
