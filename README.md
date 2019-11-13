@@ -1,22 +1,23 @@
 
 
 
-## Project: Snake
+## Project: Snake on assembly
 
 As the title suggests this is a tutorial to make a Snake with 8 LEDs and your Microcontroller ATMEL 89C52. This is, turning all the LEDs ON one by one from the right to the left, turning them OFF in the same direction, turning them ON in the opposite direction and then OFF again in the same direction (left to right). Using your imagination, you’ll see a snake going from one side to the other; first leaving the “LEDs area”, coming back to it form the same side it left and then doing this cyclically until you disconnect the power source.
 You’ll see a behavior like this:
 
-  1. 0 0 0 0 0 0 0 0
-  2. 0 0 0 0 0 1 1 1
-  3. 0 1 1 1 1 1 1 1
-  4. 1 1 1 1 1 1 1 1
-  5. 1 1 1 1 1 1 1 0
-  6. 1 1 1 1 0 0 0 0
-  7. 1 0 0 0 0 0 0 0
-  8. 0 0 0 0 0 0 0 0
-  9. 1 0 0 0 0 0 0 0
-  A. 1 1 1 1 0 0 0 0
-
+  - 0 0 0 0 0 0 0 0
+  - 0 0 0 0 0 1 1 1
+  - 0 1 1 1 1 1 1 1
+  - 1 1 1 1 1 1 1 1
+  - 1 1 1 1 1 1 1 0
+  - 1 1 1 1 0 0 0 0
+  - 1 0 0 0 0 0 0 0
+  - 0 0 0 0 0 0 0 0
+  - 1 0 0 0 0 0 0 0
+  - 1 1 1 1 0 0 0 0
+  - 1 1 1 1 1 0 0 0
+  - ...
 
 We won’t analyze in deep the hardware requirements as that could be something that could vary depending on your implementation, however the following are 4 items that should be present for the code to work as it’s written:
   - Microcontroller ATMEL 89C52
