@@ -1,92 +1,91 @@
 $title (snake program);For ATMEL 89C52
+;Instruction set: http://www.keil.com/dd/docs/datashts/atmel/at_c51ism.pdf (pg.11)
 snake equ 0000h
+
 org snake
-sjmp main
+
+; Do initialisation of Stack Pointer and p2 port register 
+MOV SP, #00000111b
+MOV p2, #00000000b
+; In this link: https://www.datsi.fi.upm.es/docencia/Micro_C/atmel/doc0313.pdf 
+; you'll find the necessary hardware specifications and diagrams (1st and 2nd pages)
+; that'll guide you on how to wire your LEDs to the AT89C52. Being P2.0 the lsb (2^0)
+
+SJMP main
 main: 
-clr C ; Clears a register. This instruction performs an Exclusive OR between a register and itself. This will clear all bits in the register.
-mov a, #01h ; we have 1 in ac
-clr 01h ; clears bit 1
-clr 02h ; clears bit 2
-clr 03h ; clears bit 3
-;Being clr a microcontroller-specific instruction
+CLR C ; Clears a register. This is the same as mov C,#0
+MOV a, #00h ; we have 0 in acumulator
+;Remember CLR is a microcontroller-specific instruction
 
-cycle: ;label for loop 
-mov p2,a ; this is how we turn the LEDs ON/OFF (8-bit port p2)
+acall fill_to_FF_left
+acall fill_to_00_left
+acall fill_to_FF_right
+acall fill_to_00_right
+SJMP  main
 
-acall mdelay ;  unconditionally waits 1 sec
 
 ;******************
-;at the beginning none of these jumps
-jb 03h, fourth
-jb 02h, third
-jb 01h,second
+; output to LEDs
+outputLED:
+MOV p2,a ; this is how we turn the LEDs ON/OFF (8-bit port p2)
+acall mdelay ;  unconditionally waits 1 sec
+RET
 ;*******************
 
 ;******************************
-;this cyclically jumps to *firstA* until all the LEDs are ON. First step  
-first:
-CJNE a,#0FFh,firstA; calls *firstA* until all acc bits are set thus all LEDs are ON
-cpl 01h ; we use this bit as a flag
-jb 01h, second ; if bit is set to one goes to *second*
+; Starting from 0x00, fill to 0xFF right to left.
+; 00000000 through 00001111 to 11111111
+fill_to_FF_left:
+RL a ; moves bit 00000001 -> 00000010
+INC a ; turns ON the rightmost LED
+acall outputLED
+CJNE a,#0FFh,fill_to_FF_left ; jumps to *fill_to_FF_left* until all acc bits are set thus all LEDs are ON
+RET
 ;******************************
 
 ;******************************
-;this cyclically moves the bits to the left 
-firstA:  
-rl a ; moves bit 00000001 -> 00000010
-inc a ; turns ON the rightmost LED 
-sjmp cycle ; calls *cycle* to set acc to p2 and turn on the LEDs
-;********************************
-
-;******************************
-;cyclically turns OFF LEDs the bits from right to left. firstA step
-second:
-rl a
-dec a ;turns OFF the rightmost LED (now the snake is leaving)
-jz secondA; if acc goes to ZERO, then jumps to *secondA* to move to the next step
-sjmp cycle
+; Starting from 0xFF, fill to 0x00 right to left.
+; 11111111 through 11110000 to 00000000
+fill_to_00_left:
+RL a ; moves bit 11111110 -> 11111101 (Rotate Left)
+DEC a ; turns OFF the rightmost ON LED
+acall outputLED
+JNZ fill_to_00_left ; jumps to *fill_to_00_left* until all acc bits are zero thus all LEDs are OFF
+RET
 ;******************************
 
 ;******************************
-;cyclically turns ON LEDs the bits from left to right. Third step
-third:
-CJNE a,#0FFh, thirdA
-cpl 03h; once set, it goes for the last step, turning the LEDs OFF from the left  
-jb 03h, fourth
-
-thirdA:
-inc a ;turns ON the rightmost LED 
-rr a ;Rotate Accumulator Right (now the snake is coming back from the left)
-sjmp cycle
+; Starting from 0x00, fill to 0xFF left to right.
+; 00000000 through 11110000 to 11111111
+fill_to_FF_right:
+INC a ; turns ON the rightmost LED
+RR a ; moves bit 00000001 -> 10000000 
+acall outputLED
+CJNE a,#0FFh,fill_to_FF_right ; jumps to *fill_to_FF_right* until all acc bits are set thus all LEDs are ON
+RET
 ;******************************
 
 ;******************************
-;cyclically turns OFF LEDs the bits from left to right. Last step
-fourth:
-dec a ;turns OFF the rightmost LED 
-rr a; Rotate Accumulator Right (now the snake is leaving from left to right)
-jz reset ; once the snake left (all LEDs went OFF) we call *reset* to start over
-sjmp cycle
+; Starting from 0xFF, fill to 0x00 left to right.
+; 11111111 through 00001111 to 00000000
+fill_to_00_right:
+DEC a ; turns OFF the leftmost ON LED
+RR a ; moves bit 11111110 -> 01111111 (Rotate Right)
+acall outputLED
+JNZ fill_to_00_right ; jumps to *fill_to_00_right* until all acc bits are zero thus all LEDs are OFF
+RET
 ;******************************
 
-secondA: 
-cpl 02h ; now it will jump to *third* that will turn ON the LEDs form left to right
-sjmp cycle
+mdelay: ;creating a 1sec delay. According to AT89C52 instruction set: djnz consumes 24 cycles, so, we need the 
+;equation: 24A + (24AB + 36B) + (24AC + 24ABC + 36BC + 36C) + 36 = 11,059,200 MHz to handle delay in the ;following code: 
+MOV r0, #00Fh ; 15 decimal
+outermost: MOV r1, #FFFh ; 255 decimal   
+middle: MOV r2, #06Fh ; 111 decimal  
+innerMost: ;setting the 3 values r0, r1, r2 then moving to the first loop
+DJNZ r2, innermost  
+DJNZ r1, middle
+DJNZ r0, outermost
+RET ; it returns to "outputLED"
 
-reset:; setting bits from 1 to 0
-cpl 01h 
-cpl 02h
-cpl 03h
-sjmp cycle
-
-mdelay: ; creating a 1sec delay. This is accurate because we are using a 11.0592 MHZ crystal
-; according to AT89C52 instruction set: djnz consumes 24hz, so 16x120x240x24hz = 11059200 HZ = 1sec
-mov r0, #10h ; 16 dec
-jump0: mov r1, #78h ; 120 decimal   
-jump1:mov r2, #0f0h ; 240 decimal  
-jump2: ;setting the 3 values r0, r1, r2 then moving to the first loop
-djnz r2,jump2 ; 
-djnz r1,jump ;
-djnz r0, jump0 ;
-ret
-end
+END
+;Special thanks to modi123_1 @ dreamincode.net who gave me valuable feedback about the last version and allowed me to create this one.
